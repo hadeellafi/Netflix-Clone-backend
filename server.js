@@ -41,20 +41,27 @@ server.post('/getMovies', addMovieHandler);
 /////lab16 
 server.put('/UPDATE/:id', updateMovieHandler);
 server.delete('/DELETE/:id', deleteMovieHandler);
-server.get('/getMovieById',getMovieByIdHandler);
+server.get('/getMovieById', getMovieByIdHandler);
 
 
 function updateMovieHandler(req, res) {
     const id = req.params.id;
     console.log(req.body);
-    const sql = `UPDATE ownMovies
-    SET title = $1, release_date = $2, poster_path = $3, overview = $4
-    WHERE id = ${id};`
-    const { title, release_date, poster_path, overview } = req.body;
-    const values = [title, release_date, poster_path, overview];
+    const sql = `UPDATE ownMovies SET comment=$1 WHERE id = ${id} RETURNING *;`
+    //RETURNING *: it will get back my current item i update it inside rows
+    const { comment } = req.body;
+    const values = [comment];
     client.query(sql, values)
         .then(data => {
-            res.status(202).send(data);
+            const sql = `SELECT * FROM ownMovies;`
+            client.query(sql)
+                .then(allData => {
+                    res.send(allData.rows)
+                })
+
+                .catch(error => {
+                    errorHandler(error, req, res)
+                })
         })
         .catch(error => {
             errorHandler(error, req, res)
@@ -68,23 +75,32 @@ function deleteMovieHandler(req, res) {
     const sql = `DELETE FROM ownMovies WHERE id=${id};`
     client.query(sql)
         .then(data => {
-            res.status(202).send(data)
+            const sql = `SELECT * FROM ownMovies;`
+            client.query(sql)
+                .then(allData => {
+                    res.send(allData.rows)
+                })
+
+                .catch(error => {
+                    errorHandler(error, req, res)
+                })
         })
         .catch(error => {
             errorHandler(error, req, res)
         })
 }
 
-function getMovieByIdHandler(req,res){
-    const id=req.query.id;
+function getMovieByIdHandler(req, res) {
+    const id = req.query.id;
     console.log(req.query.id);
-    sql=`SELECT * FROM ownMovies WHERE id=${id};`
+    sql = `SELECT * FROM ownMovies WHERE id=${id};`
     client.query(sql)
-    .then(data=>{
-        res.send(data.rows)})
-    .catch(error => {
-        errorHandler(error, req, res);
-    })
+        .then(data => {
+            res.send(data.rows)
+        })
+        .catch(error => {
+            errorHandler(error, req, res);
+        })
 }
 
 
@@ -203,7 +219,7 @@ function addMovieHandler(req, res) {
     console.log(movie);
     const sql = `INSERT INTO ownMovies (title, release_date, poster_path, overview,comment)
     VALUES ($1, $2, $3, $4,$5);`
-    const values = [movie.title, movie.release_date, movie.poster_path, movie.overview,movie.comment];
+    const values = [movie.title, movie.release_date, movie.poster_path, movie.overview, movie.comment];
     client.query(sql, values)
         .then(data => {
             res.send("The data has been added successfully");
