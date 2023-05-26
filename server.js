@@ -6,7 +6,7 @@ const server = express();
 require('dotenv').config();
 
 server.use(cors());
-const PORT = process.env.PORT || 3006;
+const PORT = process.env.PORT || 3008;
 
 const axios = require('axios');
 
@@ -42,7 +42,50 @@ server.post('/getMovies', addMovieHandler);
 server.put('/UPDATE/:id', updateMovieHandler);
 server.delete('/DELETE/:id', deleteMovieHandler);
 server.get('/getMovieById', getMovieByIdHandler);
+/////project
 
+server.post('/addReview', addReviewHandler);
+
+function addReviewHandler(req, res) {
+    const review = req.body;
+    console.log(review);
+
+    const sql = `INSERT INTO user_comments (email, location_id, comments, rating)
+    VALUES ($1, $2, $3, $4);`
+    const values = [review.email, review.location_id, review.comments, review.rating];
+    client.query(sql, values)
+
+        .then(data => {
+            const sql = `SELECT * FROM user_comments WHERE location_id='${review.location_id}';`;
+            client.query(sql)
+                .then(allData => {
+                    res.send(allData.rows)
+                })
+
+                .catch(error => {
+                    errorHandler(error, req, res)
+                })
+        })
+
+        .catch((error) => {
+            errorHandler(error, req, res)
+        })
+}
+
+server.get('/getReviewsById', getReviewsByIdHandler);
+
+function getReviewsByIdHandler(req, res) {
+    const location_id = req.query.location_id;
+    console.log(req.query.location_id);
+    const sql = `SELECT * FROM user_comments WHERE location_id='${location_id}';`;
+    client.query(sql)
+        .then(data => {
+            res.send(data.rows)
+        })
+        .catch(error => {
+            errorHandler(error, req, res);
+        })
+}
 
 function updateMovieHandler(req, res) {
     const id = req.params.id;
@@ -228,7 +271,6 @@ function addMovieHandler(req, res) {
             errorHandler(error, req, res)
         })
 }
-
 
 function errorHandler(error, req, res) {
     const err = {
